@@ -121,7 +121,7 @@ export default class ANCETtsSocketService {
         };
         //连接关闭
         this.ws.onclose = (e) => {
-            console.error(`tts receive socket closed: `, e);
+            console.warn(`tts receive socket closed: `, e);
             this.connected = false;
             this.isConnecting = false
         };

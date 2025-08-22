@@ -2,6 +2,7 @@ import axios from 'axios'
 import { Notification, MessageBox, Message } from 'element-ui'
 import { cancelPending, addPending } from '@/utils/cancelRequest'
 import router from '@/router'
+import CryptoJS from './crypto-js'
 
 axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8'
 // 创建axios实例
@@ -16,6 +17,15 @@ const service = axios.create({
 service.interceptors.request.use(config => {
   // 是否需要设置 token
   const isToken = (config.headers || {}).isToken === false
+
+  // 添加一下鉴权信息
+  // 确保headers对象存在
+  config.headers = config.headers || {};
+  // 添加鉴权
+  // 息
+  config.headers['AppKey'] = process.env.VUE_APP_APP_KEY;
+  config.headers['Timestamp'] = Date.now();
+  config.headers['Signature'] = getSignature(Date.now());
   // if (getToken() && !isToken) {
   //   config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
   //   const currentMeta = router.app._router.history.current.meta
@@ -63,6 +73,11 @@ service.interceptors.response.use(res => {
     // 获取错误信息
     const msg = res.data.msg
     if (code === 401) {
+      // 特殊处理timestamp验证失败错误，交给组件处理
+      // 使用正则表达式匹配错误信息，允许空格变化
+      if (res.data && res.data.error && /timestamp\s+is\s+not\s+pass/.test(res.data.error)) {
+        return Promise.reject(error);
+      }
       MessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', {
           confirmButtonText: '重新登录',
           cancelButtonText: '取消',
@@ -109,5 +124,18 @@ service.interceptors.response.use(res => {
     return Promise.reject(error)
   }
 )
+
+/**
+ * 生成签名
+ * @param {*} record 
+ * @returns 
+ */
+function getSignature(record) {
+  let PARAM = `AppKey=${process.env.VUE_APP_APP_KEY}&Timestamp=${record}`
+  let ENCODEPARAM = encodeURI(PARAM)
+  let SIGNATURESHA = CryptoJS.HmacSHA256(CryptoJS.enc.Utf8.parse(ENCODEPARAM), CryptoJS.enc.Utf8.parse(process.env.VUE_APP_APP_SECRET));
+  let SIGNATURE = SIGNATURESHA.toString(CryptoJS.enc.Hex);
+  return SIGNATURE
+}
 
 export default service

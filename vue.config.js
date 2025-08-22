@@ -28,6 +28,11 @@ module.exports = {
       entry: 'src/worker/serialWorker.js',// 串口工作线程入口
       template: 'public/worker.html',// 工作线程HTML模板
       filename: 'worker.html' // 输出文件名
+    },
+    irisWorker: {
+      entry: 'src/worker/irisWorker.js',
+      template: 'public/irisWorker.html',
+      filename: 'irisWorker.html'
     }
   },
   pluginOptions: { // 插件
@@ -46,7 +51,7 @@ module.exports = {
           name: process.env.VUE_APP_APPID.split(".").pop(),
           version: process.env.VUE_APP_VERSION,
         },
-        asar: true, // 启用asar打包，将应用源码打包成单个文件
+        asar: true, // 🔧 恢复asar打包
         directories: {
           output: "dist_electron",
           buildResources: "build",
@@ -56,6 +61,19 @@ module.exports = {
           {
             filter: ["**"],
           },
+        ],
+        // 🔧 修复：确保WASM文件被复制到应用根目录，而不是resources目录
+        extraResources: [
+          {
+            from: "public/wasm/",
+            to: "../wasm/",  // 复制到应用根目录的wasm文件夹
+            filter: ["**/*"]
+          },
+          {
+            from: "public/models/",
+            to: "../models/", // 复制到应用根目录的models文件夹
+            filter: ["**/*"]
+          }
         ],
         extends: null,
         electronVersion: '31.0.2',// "13.6.9",
